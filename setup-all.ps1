@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   AI Stack One-Click Setup — Windows (PowerShell)
 .DESCRIPTION
