@@ -6,7 +6,7 @@
 # Tests the integration with a "hello world" prompt
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/main/setup-all.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/master/setup-all.sh | bash
 #
 # Or:
 #   chmod +x setup-all.sh && ./setup-all.sh

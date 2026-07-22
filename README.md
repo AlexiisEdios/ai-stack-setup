@@ -20,7 +20,7 @@ Once installed, Hermes talks to OmniRoute, which load-balances across free/paid 
 ### Windows (PowerShell — recommended)
 
 ```powershell
-irm https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/main/setup-all.ps1 | iex
+irm https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/master/setup-all.ps1 | iex
 ```
 
 Or download `setup-all.ps1` and run it.
@@ -31,7 +31,7 @@ Or download `setup-all.ps1` and run it.
 ### Linux / macOS / WSL / Git Bash
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/main/setup-all.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/master/setup-all.sh | bash
 ```
 
 Or clone and run:

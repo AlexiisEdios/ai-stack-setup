@@ -6,7 +6,7 @@
   Configures them to work together out of the box.
 
 .USAGE
-  irm https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/main/setup-all.ps1 | iex
+  irm https://raw.githubusercontent.com/AlexiisEdios/ai-stack-setup/master/setup-all.ps1 | iex
 
   Or save and run:
     .\setup-all.ps1
