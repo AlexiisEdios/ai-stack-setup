@@ -230,38 +230,10 @@ if (-not (Test-Path $HERMES_HOME)) {
     New-Item -ItemType Directory -Path $HERMES_HOME -Force | Out-Null
 }
 
-# Write/update config
-if (Test-Path $configFile) {
-    Write-Info "Updating existing Hermes config..."
-
-    # Read existing config, check if OmniRoute provider is there
-    $config = Get-Content $configFile -Raw
-    # Check whether to add to existing custom_providers or create new section
-    if ($config -notmatch "OmniRoute") {
-        if ($config -match "custom_providers:") {
-            # Append just a list item under existing custom_providers
-            Add-Content $configFile @"
-
-  - name: OmniRoute
-    base_url: http://localhost:${OMNIROUTE_PORT}/v1
-    api_key: ${API_KEY}
-"@
-        } else {
-            # Add the full custom_providers section
-            Add-Content $configFile @"
-
-custom_providers:
-  - name: OmniRoute
-    base_url: http://localhost:${OMNIROUTE_PORT}/v1
-    api_key: ${API_KEY}
-"@
-        }
-    }
-} else {
-    Write-Info "Creating fresh Hermes config..."
-    @"
+# ── Hermes config template (fresh) ──
+$HERMES_CONFIG_TEMPLATE = @"
 model:
-  default: omni/auto
+  default: auto/chat
   provider: custom:OmniRoute
   api_key: ${API_KEY}
   base_url: http://localhost:${OMNIROUTE_PORT}/v1
@@ -279,7 +251,60 @@ approvals:
   mode: smart
 security:
   allow_private_urls: true
-"@ | Out-File -FilePath $configFile -Encoding utf8
+"@
+
+# ── YAML overlay helper: overlay model: section onto existing config ──
+$OVERLAY_YAML = @"
+model:
+  default: auto/chat
+  provider: custom:OmniRoute
+  api_key: ${API_KEY}
+  base_url: http://localhost:${OMNIROUTE_PORT}/v1
+  context_length: 65536
+"@
+
+# Write/update config
+if (Test-Path $configFile) {
+    Write-Info "Updating existing Hermes config..."
+
+    $config = Get-Content $configFile -Raw
+
+    # Overwrite model: section so Hermes points at OmniRoute (not ollama-cloud)
+    if ($config -match '(?ms)^model:.*?(?=^[a-z]|\z)') {
+        # Replace existing model: block
+        $config = $config -replace '(?ms)^model:.*?(?=^[a-z]|\z)', $OVERLAY_YAML
+    } else {
+        # Prepend model: block at the top
+        $config = $OVERLAY_YAML + "`n" + $config
+    }
+
+    # Add OmniRoute custom_providers entry if missing
+    if ($config -notmatch "OmniRoute") {
+        if ($config -match "(?ms)^custom_providers:.*?(?=^[a-z]|\z)") {
+            # Append entry under existing custom_providers
+            $config = $config -replace '(?ms)^(custom_providers:.*?)(?=^[a-z]|\z)', ('${1}' + @"
+
+  - name: OmniRoute
+    base_url: http://localhost:${OMNIROUTE_PORT}/v1
+    api_key: ${API_KEY}
+"@)
+        } else {
+            # Append full custom_providers section
+            $config += @"
+
+custom_providers:
+  - name: OmniRoute
+    base_url: http://localhost:${OMNIROUTE_PORT}/v1
+    api_key: ${API_KEY}
+"@
+        }
+    }
+
+    # Write merged config
+    $config | Out-File -FilePath $configFile -Encoding utf8 -NoNewline
+} else {
+    Write-Info "Creating fresh Hermes config..."
+    $HERMES_CONFIG_TEMPLATE | Out-File -FilePath $configFile -Encoding utf8
 }
 
 Write-OK "Hermes configured to route through OmniRoute at localhost:${OMNIROUTE_PORT}"
@@ -336,7 +361,7 @@ if ($omnirouteCmd) {
         # Test chat completion
         try {
             $body = @{
-                model = "hy3:free"
+                model = "auto/chat"
                 messages = @(@{ role = "user"; content = "Say hello in one word" })
                 stream = $false
             } | ConvertTo-Json
