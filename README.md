@@ -75,17 +75,17 @@ hermes model set hy3:free
 hermes chat --once --message "Write a Python script to sort a list"
 ```
 
-### Add Free Providers in OmniRoute
+### Add Free Models via OmniRoute Providers
 
 1. Open http://localhost:20128
 2. Go to **Providers** → **Add Provider**
-3. Pick **Hy3** (free, no API key needed) or others:
-   - **Hy3** — Free Claude/Gemini/Llama models
+3. Pick a provider (each gives access to free models):
+   - **OpenRouter** — Many free models with rate limits
    - **Gemini Free** — Google's Gemini models (free tier)
    - **GitHub Models** — Free with GitHub login
-   - **OpenRouter** — Many free models with rate limits
+   - **Hy3 Provider** — Free Claude/Gemini/Llama models (model prefix: `hy3:`)
 4. Create a **Combo** (routing strategy) with your chosen models
-5. Your Hermes agent can now use them!
+5. Hermes uses model names like `hy3:free` or `openrouter:auto` — set one via `hermes model set <model>`
 
 ---
 

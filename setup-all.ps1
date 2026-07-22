@@ -222,15 +222,26 @@ if (Test-Path $configFile) {
 
     # Read existing config, check if OmniRoute provider is there
     $config = Get-Content $configFile -Raw
+    # Check whether to add to existing custom_providers or create new section
     if ($config -notmatch "OmniRoute") {
-        # Append custom provider
-        Add-Content $configFile @"
+        if ($config -match "custom_providers:") {
+            # Append just a list item under existing custom_providers
+            Add-Content $configFile @"
+
+  - name: OmniRoute
+    base_url: http://localhost:${OMNIROUTE_PORT}/v1
+    api_key: ${API_KEY}
+"@
+        } else {
+            # Add the full custom_providers section
+            Add-Content $configFile @"
 
 custom_providers:
   - name: OmniRoute
     base_url: http://localhost:${OMNIROUTE_PORT}/v1
     api_key: ${API_KEY}
 "@
+        }
     }
 } else {
     Write-Info "Creating fresh Hermes config..."
@@ -380,7 +391,7 @@ Write-Host @"
 
    Next steps:
    1. Open OmniRoute dashboard: http://localhost:${OMNIROUTE_PORT}
-   2. Add API keys for free providers (Hy3, Gemini, etc.)
+   2. Add free API keys in the OmniRoute dashboard → Providers
    3. Chat with Hermes:           hermes chat
    4. Set a specific model:      hermes model set <model-name>
 

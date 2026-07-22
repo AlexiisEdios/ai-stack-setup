@@ -269,7 +269,6 @@ custom_providers:
   - name: OmniRoute
     base_url: http://localhost:${OMNIROUTE_PORT}/v1
     api_key: ${OMNIROUTE_KEY}
-    model: omni/auto
 toolsets:
   - hermes-cli
   - web
@@ -367,7 +366,7 @@ echo "   • Hermes Agent v$(hermes --version 2>/dev/null | head -1 || echo '?')
 echo ""
 echo "   ${BOLD}Next steps:${NC}"
 echo "   1. Open OmniRoute dashboard: http://localhost:${OMNIROUTE_PORT}"
-echo "   2. Add API keys for free providers (Hy3, etc.)"
+echo "   2. Add free API keys in the OmniRoute dashboard → Providers"
 echo "   3. Chat with Hermes:  hermes chat"
 echo "   4. Set a system model: hermes model set <model-name>"
 echo ""
