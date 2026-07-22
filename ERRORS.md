@@ -39,4 +39,16 @@ PowerShell 5.1 on Windows fails to parse UTF-8 files without BOM, causing crypti
 
 **Commits:** 524dce0
 
+### 4. UTF-8 BOM Breaks irm | iex Pipeline
+**Error:**
+```
+﻿<#: term '﻿<#' is not recognized as name of cmdlet
+```
+**Root cause:** When the script is piped through `irm ... | iex`, the BOM bytes 
+`\xEF\xBB\xBF` are not treated as an encoding marker — they arrive as literal text 
+chars `ï»¿`, so PowerShell tries to execute `ï»¿<#` as a command.
+
+**Tension:** `-File` parsing needs BOM; `iex` piping needs no BOM. The primary install 
+path is `iex`, so BOM was stripped (commit e613755).
+
 ## Status: All fixed, committed, pushed to origin/master
