@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   AI Stack One-Click Setup — Windows (PowerShell)
 .DESCRIPTION
@@ -65,7 +65,12 @@ $nodePath = Get-Command "node" -ErrorAction SilentlyContinue
 if ($nodePath) {
     $nv = node --version
     Write-OK "Node.js already installed: $nv"
-} else {
+}
+
+# npm.cmd bypasses the .ps1 shim that execution policy blocks
+$npmCmd = if (Get-Command "npm.cmd" -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
+
+if (-not $nodePath) {
     Write-Info "Installing Node.js $NODE_VERSION..."
     try {
         # Try winget first (fastest on modern Windows)
@@ -96,7 +101,7 @@ if ($nodePath) {
 }
 
 if (Get-Command "node" -ErrorAction SilentlyContinue) {
-    Write-OK "Node.js $(node --version) + npm $(npm --version)"
+    Write-OK "Node.js $(node --version) + $($npmCmd.Split('.')[0]) $(& $npmCmd --version)"
 } else {
     Write-Fail "Node.js not found after install. Restart PowerShell or install manually."
 }
@@ -111,8 +116,17 @@ if (-not $pythonPath) {
 
 if ($pythonPath) {
     $pv = & $pythonPath.Source --version 2>&1
-    Write-OK "Python already installed: $pv"
-} else {
+    # MS Store stub says "Python was not found" — treat as not installed
+    if ($pv -match "Microsoft Store|was not found|not found") {
+        Write-Warn "Python detected but is a Microsoft Store redirect stub."
+        Write-Warn "Will install real Python."
+        $pythonPath = $null
+    } else {
+        Write-OK "Python already installed: $pv"
+    }
+}
+
+if (-not $pythonPath) {
     Write-Info "Installing Python..."
     try {
         $winget = Get-Command "winget" -ErrorAction SilentlyContinue
@@ -157,19 +171,19 @@ if ($omniroutePath) {
 } else {
     Write-Info "Installing OmniRoute via npm (global)..."
     try {
-        npm install -g omniroute 2>&1 | Out-Null
+        & $npmCmd install -g omniroute 2>&1 | Out-Null
         # npm global might not be in PATH immediately
-        $npmPrefix = npm config get prefix
+        $npmPrefix = & $npmCmd config get prefix
         $env:Path = "$npmPrefix;$env:Path"
     } catch {
         # Try with --force
-        npm install -g omniroute --force 2>&1 | Out-Null
+        & $npmCmd install -g omniroute --force 2>&1 | Out-Null
     }
     if (Get-Command "omniroute" -ErrorAction SilentlyContinue) {
         Write-OK "OmniRoute v$(omniroute --version) installed"
     } else {
         Write-Warn "OmniRoute installed but not in PATH."
-        Write-Warn "It's at: $(npm root -g)\..\bin\omniroute"
+        Write-Warn "It's at: $(& $npmCmd root -g)\..\bin\omniroute"
         Write-Warn "Add npm global prefix to your PATH."
     }
 }
@@ -276,7 +290,7 @@ Write-Header "Step 6: Start OmniRoute & Verify"
 $omnirouteCmd = Get-Command "omniroute" -ErrorAction SilentlyContinue
 if (-not $omnirouteCmd) {
     # Try npm global bin
-    $npmPrefix = npm config get prefix
+    $npmPrefix = & $npmCmd config get prefix
     $omnirouteCmd = Get-Command "$npmPrefix\omniroute" -ErrorAction SilentlyContinue
 }
 
@@ -375,7 +389,7 @@ Write-Host @"
 "@ -ForegroundColor Green
 
 try {
-    Write-Host "   • Node.js $(node --version) + npm $(npm --version)"
+    Write-Host "   • Node.js $(node --version) + $($npmCmd.Split('.')[0]) $(& $npmCmd --version)"
 } catch { Write-Host "   • Node.js (check manually)" }
 try {
     Write-Host "   • Python $(python --version 2>&1)"
