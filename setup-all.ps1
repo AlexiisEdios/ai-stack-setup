@@ -26,6 +26,9 @@ $HERMES_INSTALL_DIR = "$HERMES_HOME\hermes-agent"
 $TEMP_LOG = "$env:TEMP\omniroute-setup.log"
 $API_KEY = "sk-" + -join ((48..57) + (97..102) | Get-Random -Count 32 | ForEach-Object { [char]$_ })
 
+# nvm-windows install URL
+$NVM_WINDOWS_URL = "https://github.com/coreybutler/nvm-windows/releases/latest/download/nvm-setup.exe"
+
 # ── Colors (PowerShell-compatible) ─────────────────────────────────────────
 $Host.UI.RawUI.ForegroundColor = "White"
 function Write-Info   { Write-Host "→ $args" -ForegroundColor Cyan }
@@ -104,6 +107,42 @@ if (Get-Command "node" -ErrorAction SilentlyContinue) {
     Write-OK "Node.js $(node --version) + $($npmCmd.Split('.')[0]) $(& $npmCmd --version)"
 } else {
     Write-Fail "Node.js not found after install. Restart PowerShell or install manually."
+}
+
+# ── Step 1b: nvm-windows ──────────────────────────────────────────────────
+Write-Header "Step 1b: nvm-windows (Node Version Manager)"
+
+$nvmPath = Get-Command "nvm" -ErrorAction SilentlyContinue
+if ($nvmPath) {
+    $nvmVer = nvm version
+    Write-OK "nvm-windows already installed: $nvmVer"
+} else {
+    Write-Info "Installing nvm-windows..."
+    try {
+        $nvmInstaller = "$env:TEMP\nvm-setup.exe"
+        Write-Info "Downloading nvm-setup.exe from $NVM_WINDOWS_URL ..."
+        Invoke-WebRequest -Uri $NVM_WINDOWS_URL -OutFile $nvmInstaller
+        Write-Info "Running nvm installer (silent)..."
+        Start-Process $nvmInstaller -Wait -ArgumentList "/S"
+        Remove-Item $nvmInstaller -Force -ErrorAction SilentlyContinue
+
+        # Refresh PATH to pick up nvm
+        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+
+        # Verify nvm is available
+        if (Get-Command "nvm" -ErrorAction SilentlyContinue) {
+            Write-OK "nvm-windows installed: $(nvm version)"
+            Write-Info "Installing Node.js $NODE_VERSION via nvm..."
+            nvm install $NODE_VERSION 2>&1 | Out-Null
+            nvm use $NODE_VERSION 2>&1 | Out-Null
+            Write-OK "Node.js $(node --version) active via nvm"
+        } else {
+            Write-Warn "nvm installed but not in current PATH. Restart PowerShell and run 'nvm install $NODE_VERSION' manually."
+        }
+    } catch {
+        Write-Warn "nvm-windows install failed: $_"
+        Write-Warn "Manual install: Download from https://github.com/coreybutler/nvm-windows/releases"
+    }
 }
 
 # ── Step 2: Python ────────────────────────────────────────────────────────

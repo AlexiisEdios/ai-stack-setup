@@ -30,6 +30,12 @@ PYTHON_VERSION="3.11"
 OMNIROUTE_PORT=20128
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 
+# nvm install URL
+NVM_INSTALL_URL="https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh"
+
+# nvm-windows download URL
+NVM_WINDOWS_URL="https://github.com/coreybutler/nvm-windows/releases/latest/download/nvm-setup.exe"
+
 # ── Helpers ─────────────────────────────────────────────────────────────────
 info()  { echo -e "${CYAN}→${NC} $1"; }
 ok()    { echo -e "${GREEN}✓${NC} $1"; }
@@ -80,12 +86,8 @@ else
       if command -v brew &>/dev/null; then
         brew install node@${NODE_VERSION}
       else
-        # Install via nvm
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install $NODE_VERSION
-        nvm use $NODE_VERSION
+        info "Node.js will be installed via nvm in the next step"
+        # nvm step will handle this
       fi
       ;;
     windows)
@@ -112,6 +114,53 @@ if ! command -v npm &>/dev/null; then
   fail "npm not found (should come with Node.js)"
 fi
 ok "npm $(npm --version)"
+
+# ── 1b. Install nvm (Node Version Manager) ─────────────────────────────────
+header "Step 1b: nvm (Node Version Manager)"
+
+if command -v nvm &>/dev/null; then
+  ok "nvm already installed: $(nvm --version 2>/dev/null || echo 'available')"
+else
+  info "Installing nvm..."
+  case "$PLATFORM" in
+    linux|macos)
+      # Install nvm via official installer
+      curl -o- "$NVM_INSTALL_URL" | bash
+      # Source it for current session
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+      if command -v nvm &>/dev/null; then
+        ok "nvm installed: $(nvm --version)"
+        info "Installing Node.js $NODE_VERSION via nvm (if not already)..."
+        nvm install $NODE_VERSION 2>/dev/null || true
+        nvm use $NODE_VERSION 2>/dev/null || true
+        ok "Node.js $(node --version) active via nvm"
+      else
+        warn "nvm installed but not in current shell. Restart shell or run: export NVM_DIR=\"\$HOME/.nvm\"; [ -s \"\$NVM_DIR/nvm.sh\" ] && \\. \"\$NVM_DIR/nvm.sh\""
+      fi
+      ;;
+    windows)
+      # Git Bash — use nvm-windows via direct download
+      if command -v nvm &>/dev/null; then
+        ok "nvm-windows already available"
+      else
+        info "Installing nvm-windows via direct download..."
+        NVM_INSTALLER="/tmp/nvm-setup.exe"
+        if curl -fsSL "$NVM_WINDOWS_URL" -o "$NVM_INSTALLER"; then
+          # Run silently (requires admin, may fail in Git Bash without elevation)
+          "$NVM_INSTALLER" /S 2>/dev/null || warn "nvm-windows installer needs Admin rights. Run Git Bash as Administrator or use the PowerShell script."
+          rm -f "$NVM_INSTALLER"
+        else
+          warn "Download failed. Install nvm-windows manually from: $NVM_WINDOWS_URL"
+        fi
+      fi
+      if ! command -v nvm &>/dev/null; then
+        warn "nvm not available in current shell. Restart Git Bash as Administrator and re-run, or use setup-all.ps1 (PowerShell)."
+      fi
+      ;;
+  esac
+fi
 
 spacer
 
